@@ -1,0 +1,49 @@
+<!-- Create a web page like this webpage https://onlinealarmkur.com/fr/ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="bootstrap.css">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100&display=swap" rel="stylesheet">
+    <title>Alarm Clock</title>
+</head>
+<body>
+    <div class="container" id="container">
+        <div class="row">
+            <div class="col-md-12" id="clock">
+                <div id="date"></div>
+                <div id="time"></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12" id="alarm">
+                <div class="alarm-set">
+                    <div id="alarm-tone">
+                        <audio src="audio/clock.mp3" id="audio"></audio>
+                    </div>
+                    <div class="timepicker-wrapper">
+                        <div class="timepicker">
+                            <input type="text" id="timepicker">
+                        </div>
+                        <button class="btn" id="set-alarm">
+                            Set Alarm
+                        </button>
+                    </div>
+                </div>
+                <div class="alarm-off" id="alarm-off">
+                    <div class="timepicker-wrapper">
+                        <button class="btn" id="alarm-on">
+                            Alarm On
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
