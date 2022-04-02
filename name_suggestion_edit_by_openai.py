@@ -1,3 +1,7 @@
+"""
+Name suggestion using openai API
+"""
+
 import os
 import sys
 import openai
