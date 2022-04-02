@@ -1,10 +1,12 @@
 """
 create a ui display volume in RMS from input mic audio signal with pyqt5
 """
+import os
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QSlider, QLabel
 from PyQt5.QtCore import QThread, pyqtSignal, QTimer, Qt
 from PyQt5.QtGui import QPainter, QColor, QPen, QBrush
+import wave
 import sys
 import pyaudio
 import numpy as np
@@ -14,6 +16,12 @@ import time
 from collections import deque
 import struct
 
+CHUNK = 1024
+FORMAT = pyaudio.paInt16
+CHANNELS = 1
+RATE = 44100
+RECORD_SECONDS = 20
+WAVE_OUTPUT_FILENAME = "output.wav"
 
 def get_rms(data):
     count = len(data) / 2
@@ -59,6 +67,7 @@ class Grapher(QMainWindow):
         self.rms_list = [0] * 500
 
         self.threshold = 0.05
+        self.over_threshold = False
 
         # self.color = (0,255,0)
 
@@ -105,8 +114,9 @@ class Grapher(QMainWindow):
     calculate_value_in_range = lambda self, value: max(min(value, 250), 10)
 
 
-    def addPoint(self, point):
+    def addPoint(self, point) -> bool:
         if point > self.threshold:
+            self.over_threshold = True
             # self.y_pos = 250 - ((point / self.threshold))
             self.y_pos = ((point / 10) * 250)
 
@@ -117,6 +127,8 @@ class Grapher(QMainWindow):
                 self.y_pos = 240
 
             print("POINT =", point, "y position {}".format(self.y_pos))
+
+
 
             if point > 2.0:
                 print("over threshold")
@@ -157,7 +169,9 @@ class Grapher(QMainWindow):
             # print("added point")
 
         else:
-            pass
+            self.over_threshold = False
+
+        return self.over_threshold
 
     def setThreshold(self, threshold):
         self.threshold = threshold / 100
@@ -177,7 +191,7 @@ class AudioThread(QThread):
 
         CHANNELS = 1  # stereo (2 channels) but mono is only 1 channel (2nd channel will be ignored)
 
-        RATE = 22_050  # samples per second (Hz), eg: 44100 samples per second / second (or 44100 Hz)  (CD quality is 44100 Hz)
+        RATE = 44_100  # samples per second (Hz), eg: 44100 samples per second / second (or 44100 Hz)  (CD quality is 44100 Hz)
 
         p = pyaudio.PyAudio()  # create an interfacing object using pyaudio
 
@@ -189,13 +203,35 @@ class AudioThread(QThread):
                         frames_per_buffer=CHUNK)  # buffer size in number of frames (samples/channel * channels * seconds = bytes)
 
         print("* listening")
-
+        sound_count_detected = 0
+        number_of_file_recorded = 0
+        sound_detected_list = []
+        sound_recorded_dir = "sound_recorded"
         while True:
             data = stream.read(CHUNK)  # read audio stream data (CHUNK number of bytes)
 
             rms = get_rms(data)
+            # sound_stream = np.fromstring(data, dtype=np.int16)
 
-            grapher.addPoint(rms)
+            sound_detected = grapher.addPoint(rms)
+            if sound_detected:
+                sound_count_detected += 1
+                sound_detected_list.append(data)
+            else:
+                if sound_count_detected > 10:
+                    if not os.path.exists(sound_recorded_dir):
+                        os.mkdir(sound_recorded_dir)
+                    with wave.open("{}/{}-{}".format(sound_recorded_dir, number_of_file_recorded, WAVE_OUTPUT_FILENAME,), 'wb') as f:
+                        f.setnchannels(CHANNELS)
+                        f.setsampwidth(p.get_sample_size(FORMAT))
+                        f.setframerate(RATE)
+                        f.writeframes(b''.join(sound_detected_list))
+                    sound_count_detected = 0
+                    sound_detected_list = []
+                    number_of_file_recorded += 1
+                else:
+                    sound_count_detected = 0
+                    sound_detected_list = []
 
         stream.stop_stream()  # stop the stream object
         stream.close()  # close and terminate the stream object
